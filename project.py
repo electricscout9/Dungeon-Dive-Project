@@ -118,7 +118,13 @@ while running:
                 if event.key == pygame.K_BACKSPACE:
                     if active_box.cursor.rect.x-10 > active_box.rect.x:
                         active_box.cursor.rect.x -= 10
-                    active_box.text = active_box.text[:-1]
+                        cursor_next = True
+                    if cursor_pos == len(active_box.text):
+                        active_box.text = active_box.text[:-1]
+                    else:
+                        active_box.text = active_box.text[:cursor_pos-1] + active_box.text[cursor_pos:]
+                        if len(active_box.text) > active_box.text_width and cursor_next:
+                            active_box.cursor.rect.x += 10
                 elif event.key == pygame.K_RIGHT:
                     if active_box.cursor.rect.x+10 < active_box.rect.x+active_box.width and active_box.cursor.rect.x+10 < len(active_box.text)*10+active_box.rect.x+15: 
                         active_box.cursor.rect.x += 10
