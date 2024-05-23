@@ -71,7 +71,7 @@ play = Button(50, 100, path + "\\assets\\sprites\\start.png", 2)
 play.rect.x = 600
 play.rect.y = 500
 buttons.add(play)
-username = Textbox(20, 110, [100,100], (20,20,20), (255,255,255))
+username = Textbox(20, 190, [100,100], (20,20,20), (255,255,255))
 textboxes.append(username)
 textbox_active = False
 active_box = None
@@ -100,8 +100,8 @@ while running:
     
     #Finding the active text boxes cursor location
     if active_box != None:
-        if len(active_box.text) > 10:
-            cursor_pos = (active_box.cursor.rect.x-active_box.rect.x+5)//10-11+len(active_box.text)+active_box.text_pos
+        if len(active_box.text) > active_box.text_width:
+            cursor_pos = (active_box.cursor.rect.x-active_box.rect.x+5)//10-(active_box.text_width+1)+len(active_box.text)+active_box.text_pos
         else:
             cursor_pos = (active_box.cursor.rect.x-active_box.rect.x+5)//10-1+active_box.text_pos
     
@@ -139,7 +139,7 @@ while running:
                         active_box.text += event.unicode
                     else:
                         active_box.text = active_box.text[:cursor_pos] + event.unicode + active_box.text[cursor_pos:]
-                        if len(active_box.text) > 10 and cursor_next:
+                        if len(active_box.text) > active_box.text_width and cursor_next:
                             active_box.cursor.rect.x -= 10
                         
         #Detecting exit button pressed
@@ -171,12 +171,6 @@ while running:
     
     if mouse_left_down:
         
-        if active_box != None:
-            if len(active_box.text) > 10:
-                print((active_box.cursor.rect.x-active_box.rect.x+5)//10-11+active_box.text_pos+len(active_box.text))
-            else:
-                print((active_box.cursor.rect.x-active_box.rect.x+5)//10-1+active_box.text_pos)
-        
         for box in textboxes:
             if textbox_press(mouse_position, box):
                 active_box = box
@@ -193,8 +187,8 @@ while running:
         
         if active_box.text_pos > 0:
             active_box.text_pos = 0
-        if abs(active_box.text_pos)+10 > len(active_box.text) and len(active_box.text) > 10:
-            active_box.text_pos = -len(active_box.text)+10
+        if abs(active_box.text_pos)+active_box.text_width > len(active_box.text) and len(active_box.text) > active_box.text_width:
+            active_box.text_pos = -len(active_box.text)+active_box.text_width
             
     
     

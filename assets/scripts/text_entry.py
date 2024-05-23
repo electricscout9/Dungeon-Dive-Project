@@ -16,6 +16,8 @@ class Textbox(pygame.sprite.Sprite):
         self.font = pygame.font.SysFont("Lucida Sans Typewriter", 16)
         self.text_colour = text_colour
         
+        self.text_width = (width-10)//10
+        
         self.active = False
         
         self.cursor = Textbox_cursor(self)
@@ -31,11 +33,11 @@ def draw_textbox(boxes, screen):
     for box in boxes:
             pygame.draw.rect(screen, box.colour, box.rect)
             
-            if len(box.text) > 10:
+            if len(box.text) > box.text_width:
                 if box.text_pos == 0:
-                    text = box.text[-10+box.text_pos:]
+                    text = box.text[-box.text_width+box.text_pos:]
                 else:
-                    text = box.text[-10+box.text_pos:box.text_pos]
+                    text = box.text[-box.text_width+box.text_pos:box.text_pos]
             else:
                 text = box.text
             text = box.font.render(text, True, (255,255,255))
