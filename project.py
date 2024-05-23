@@ -259,7 +259,7 @@ while running:
         player_weapon.animation = True
         
     #Sets the player and weapon to the correct orientation
-    player, player_hand, player_weapon = player_direction(player, player_hand, player_weapon)
+    player, player_hand, player_weapon = player_direction(player, player_hand, player_weapon, path)
     if player.direction == 90  or player.direction == 270:
         player.mask = pygame.mask.from_surface(pygame.Surface((player.image.get_width(), player.image.get_height())))
 

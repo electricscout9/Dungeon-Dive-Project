@@ -114,25 +114,25 @@ def player_move(player, vect_move, entities):
     elif vect_move[1] >0:
         vect_move[1] -= 1
         
-def player_direction(player, player_hand, player_weapon):
+def player_direction(player, player_hand, player_weapon, path):
     
     if player.direction == 0:
-        player.image = pygame.transform.scale(pygame.image.load("C:\\Users\\elect\\Desktop\\project\\assets\\sprites\\player_assets\\crtlnd\\crtlnd_up.png"), (player.width, player.height))
+        player.image = pygame.transform.scale(pygame.image.load(path + "\\assets\\sprites\\player_assets\\crtlnd\\crtlnd_up.png"), (player.width, player.height))
         player_hand = [player.rect.x + player.hand[1][0], player.rect.y + player.hand[1][1]]
         if not player_weapon.animation:
             player_weapon = player_weapon.image_at((0,0,99,99))
     if player.direction == 90:
-        player.image = pygame.transform.scale(pygame.transform.flip(pygame.image.load("C:\\Users\\elect\\Desktop\\project\\assets\\sprites\\player_assets\\crtlnd\\crtlnd.png"), True, False), (player.width, player.height))
+        player.image = pygame.transform.scale(pygame.transform.flip(pygame.image.load(path + "\\assets\\sprites\\player_assets\\crtlnd\\crtlnd.png"), True, False), (player.width, player.height))
         player_hand = [player.rect.x + (player.width+1-player.hand[0][0]), player.rect.y + player.hand[0][1]]
         if not player_weapon.animation:
             player_weapon.image = pygame.transform.rotate(player_weapon.image_at((0,0,99,99)).image, 90)
     if player.direction == 270:
-        player.image = pygame.transform.scale(pygame.image.load("C:\\Users\\elect\\Desktop\\project\\assets\\sprites\\player_assets\\crtlnd\\crtlnd.png"), (player.width, player.height))
+        player.image = pygame.transform.scale(pygame.image.load(path + "\\assets\\sprites\\player_assets\\crtlnd\\crtlnd.png"), (player.width, player.height))
         player_hand = [player.rect.x + player.hand[0][0], player.rect.y + player.hand[0][1]]
         if not player_weapon.animation:
             player_weapon.image = pygame.transform.rotate(player_weapon.image_at((0,0,99,99)).image, 270)
     if player.direction == 180:
-        player.image = pygame.transform.scale(pygame.image.load("C:\\Users\\elect\\Desktop\\project\\assets\\sprites\\player_assets\\crtlnd\\crtlnd_down.png"), (player.width, player.height))
+        player.image = pygame.transform.scale(pygame.image.load(path + "\\assets\\sprites\\player_assets\\crtlnd\\crtlnd_down.png"), (player.width, player.height))
         player_hand = [player.rect.x + player.hand[2][0], player.rect.y + player.hand[2][1]]
         if not player_weapon.animation:
             player_weapon.image = pygame.transform.flip(player_weapon.image_at((0,0,99,99)).image, False, True)
