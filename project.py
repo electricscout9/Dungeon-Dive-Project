@@ -121,6 +121,8 @@ while running:
                         cursor_next = True
                     if cursor_pos == len(active_box.text):
                         active_box.text = active_box.text[:-1]
+                        if len(active_box.text) > active_box.text_width and cursor_next:
+                            active_box.cursor.rect.x += 10
                     else:
                         active_box.text = active_box.text[:cursor_pos-1] + active_box.text[cursor_pos:]
                         if len(active_box.text) > active_box.text_width and cursor_next:
