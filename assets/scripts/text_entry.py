@@ -58,4 +58,41 @@ def textbox_press(mouse_location, box):
             box_pressed = True
             
     return box_pressed
-    
+
+def character_entry(event, active_box, cursor_pos):
+    cursor_next = False
+    if event.key == pygame.K_BACKSPACE:
+        if active_box.cursor.rect.x-10 > active_box.rect.x:
+            active_box.cursor.rect.x -= 10
+            cursor_next = True
+        if cursor_pos == len(active_box.text):
+            active_box.text = active_box.text[:-1]
+            if len(active_box.text) > active_box.text_width and cursor_next:
+                active_box.cursor.rect.x += 10
+                cursor_next = False
+        else:
+            active_box.text = active_box.text[:cursor_pos-1] + active_box.text[cursor_pos:]
+            if len(active_box.text) > active_box.text_width and cursor_next:
+                active_box.cursor.rect.x += 10
+    elif event.key == pygame.K_RIGHT:
+        if active_box.cursor.rect.x+10 < active_box.rect.x+active_box.width and active_box.cursor.rect.x+10 < len(active_box.text)*10+active_box.rect.x+15: 
+            active_box.cursor.rect.x += 10
+        else:
+            active_box.text_pos += 1
+    elif event.key == pygame.K_LEFT:
+                    
+        if active_box.cursor.rect.x-10 > active_box.rect.x:
+            active_box.cursor.rect.x -= 10
+        else:
+            active_box.text_pos -= 1
+    else:
+        if active_box.cursor.rect.x+10 < active_box.rect.x+active_box.width and active_box.cursor.rect.x+10 < len(active_box.text)*10+active_box.rect.x+25:
+            cursor_next = True
+            active_box.cursor.rect.x += 10
+        if cursor_pos == len(active_box.text):
+            active_box.text += event.unicode
+        else:
+            active_box.text = active_box.text[:cursor_pos] + event.unicode + active_box.text[cursor_pos:]
+            if len(active_box.text) > active_box.text_width and cursor_next:
+                active_box.cursor.rect.x -= 10
+                cursor_next = False

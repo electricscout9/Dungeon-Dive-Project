@@ -76,8 +76,8 @@ textboxes.append(username)
 textbox_active = False
 active_box = None
 
-notusername = Textbox(20, 110, [100,200], (20,20,20), (255,255,255))
-textboxes.append(notusername)
+password = Textbox(20, 110, [100,200], (20,20,20), (255,255,255))
+textboxes.append(password)
 
 
 while running:
@@ -115,40 +115,7 @@ while running:
                     aDown, sDown, dDown, wDown, player = player_input(event, player, current_frame)
         else:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_BACKSPACE:
-                    if active_box.cursor.rect.x-10 > active_box.rect.x:
-                        active_box.cursor.rect.x -= 10
-                        cursor_next = True
-                    if cursor_pos == len(active_box.text):
-                        active_box.text = active_box.text[:-1]
-                        if len(active_box.text) > active_box.text_width and cursor_next:
-                            active_box.cursor.rect.x += 10
-                    else:
-                        active_box.text = active_box.text[:cursor_pos-1] + active_box.text[cursor_pos:]
-                        if len(active_box.text) > active_box.text_width and cursor_next:
-                            active_box.cursor.rect.x += 10
-                elif event.key == pygame.K_RIGHT:
-                    if active_box.cursor.rect.x+10 < active_box.rect.x+active_box.width and active_box.cursor.rect.x+10 < len(active_box.text)*10+active_box.rect.x+15: 
-                        active_box.cursor.rect.x += 10
-                    else:
-                        active_box.text_pos += 1
-                elif event.key == pygame.K_LEFT:
-                    
-                    if active_box.cursor.rect.x-10 > active_box.rect.x:
-                        active_box.cursor.rect.x -= 10
-                    else:
-                        active_box.text_pos -= 1
-                else:
-                    if active_box.cursor.rect.x+10 < active_box.rect.x+active_box.width and active_box.cursor.rect.x+10 < len(active_box.text)*10+active_box.rect.x+25:
-                        cursor_next = True
-                        active_box.cursor.rect.x += 10
-
-                    if cursor_pos == len(active_box.text):
-                        active_box.text += event.unicode
-                    else:
-                        active_box.text = active_box.text[:cursor_pos] + event.unicode + active_box.text[cursor_pos:]
-                        if len(active_box.text) > active_box.text_width and cursor_next:
-                            active_box.cursor.rect.x -= 10
+                character_entry(event, active_box, cursor_pos)    
                         
         #Detecting exit button pressed
         if event.type == pygame.QUIT:
@@ -170,13 +137,15 @@ while running:
     if play.mouse_click():
         if play in buttons:
             
+            
             #Updating relevant variables and groups on start
             player_free = True
             allSprites.add(player)
             entities.add(room)
             buttons.remove(play)
             weapons.add(player_weapon)
-    
+            
+
     if mouse_left_down:
         
         for box in textboxes:
