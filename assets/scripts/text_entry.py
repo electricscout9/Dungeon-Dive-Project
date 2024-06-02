@@ -1,7 +1,7 @@
 import pygame
 
 class Textbox(pygame.sprite.Sprite):
-    def __init__(self, height, width, pos, colour, text_colour):
+    def __init__(self, height, width, pos, colour, text_colour, label):
         super().__init__()
         
         self.height = height
@@ -21,6 +21,8 @@ class Textbox(pygame.sprite.Sprite):
         self.active = False
         
         self.cursor = Textbox_cursor(self)
+        
+        self.label = label
     
 class Textbox_cursor(pygame.sprite.Sprite):
     def __init__(self, textbox):
@@ -45,6 +47,12 @@ def draw_textbox(boxes, screen):
             
             if box.active:
                 pygame.draw.rect(screen, (150, 150, 150), box.cursor.rect)
+            
+            if box.label != None:
+                
+                label = box.font.render(box.label, True, (0,0,0))
+                label_length = len(box.label) * 10 + 5
+                screen.blit(label, (box.rect.x-label_length, box.rect.y))
         
         
         

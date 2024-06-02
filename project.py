@@ -3,6 +3,7 @@ import pygame
 import sqlite3 as sql
 import pathlib
 import math
+import random as r
 
 #Importing relevant functions
 from assets.scripts.player_handler.player_start import *
@@ -14,6 +15,7 @@ from assets.scripts.database.database_start import *
 from assets.scripts.button import *
 from assets.scripts.weapons import *
 from assets.scripts.text_entry import *
+from assets.scripts.label import *
 
 #Initialising pygame
 pygame.init()
@@ -71,13 +73,17 @@ play = Button(50, 100, path + "\\assets\\sprites\\start.png", 2)
 play.rect.x = 600
 play.rect.y = 500
 buttons.add(play)
-username = Textbox(20, 190, [100,100], (20,20,20), (255,255,255))
+
+username = Textbox(20, 110, [100,100], (20,20,20), (255,255,255), "Username:")
 textboxes.append(username)
 textbox_active = False
 active_box = None
 
-password = Textbox(20, 110, [100,200], (20,20,20), (255,255,255))
+password = Textbox(20, 110, [100,130], (20,20,20), (255,255,255), "Password:")
 textboxes.append(password)
+
+email = Textbox(20, 110, [100,160], (20,20,20), (255,255,255), "Email:")
+textboxes.append(email)
 
 
 while running:
@@ -137,8 +143,13 @@ while running:
     if play.mouse_click():
         if play in buttons:
             
+            #Adding user entry to database
+            user_ID = str(r.randint(0,9)) + str(r.randint(0,9)) + chr(r.randint(65, 90)) + chr(r.randint(65, 90))
+            db.execute("INSERT INTO player_table VALUES(?,?,?,?)", (user_ID, username.text, password.text, email.text))
+            db.commit()
             
             #Updating relevant variables and groups on start
+            textboxes = []
             player_free = True
             allSprites.add(player)
             entities.add(room)
