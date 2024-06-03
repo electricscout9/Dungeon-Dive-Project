@@ -15,7 +15,6 @@ from assets.scripts.database.database_start import *
 from assets.scripts.button import *
 from assets.scripts.weapons import *
 from assets.scripts.text_entry import *
-from assets.scripts.label import *
 
 #Initialising pygame
 pygame.init()
@@ -27,6 +26,7 @@ weapons = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 entities = pygame.sprite.Group()
 textboxes = []
+labels = []
 
 
 #Declaring variables
@@ -47,6 +47,8 @@ background = "White"
 current_time = 0
 animation_time = 0.05
 current_frame = 0
+start_type = ""
+player_data = ()
 
 #Starting the database
 db = database_initialise()
@@ -69,21 +71,27 @@ player_weapon = melee_weapon(path + "\\assets\\sprites\\weapons\\sword.png")
 player_weapon = player_weapon.image_at(player_weapon.current_rect)
 
 #Initiallising the start screen
-play = Button(50, 100, path + "\\assets\\sprites\\start.png", 2)
-play.rect.x = 600
-play.rect.y = 500
-buttons.add(play)
+login = Label(20,60,"Log In", (400,200), (0,0,0))
+
+signup = Label(20, 70, "Sign Up", (400,300), (0,0,0))
+
+enter = Label(20, 50, "Enter", (600, 500), (0,0,0))
+
+labels.append(login)
+labels.append(signup)
+
+
 
 username = Textbox(20, 110, [100,100], (20,20,20), (255,255,255), "Username:")
-textboxes.append(username)
+
 textbox_active = False
 active_box = None
 
 password = Textbox(20, 110, [100,130], (20,20,20), (255,255,255), "Password:")
-textboxes.append(password)
+
 
 email = Textbox(20, 110, [100,160], (20,20,20), (255,255,255), "Email:")
-textboxes.append(email)
+
 
 
 while running:
@@ -140,22 +148,63 @@ while running:
         
     
     #Detecting if start button pressed
-    if play.mouse_click():
-        if play in buttons:
+    if signup.mouse_click():
+        if signup in labels:
+            start_type = "signup"
+            labels = []
+            labels.append(enter)
+            textboxes.append(username)
+            textboxes.append(password)
+            textboxes.append(email)
             
-            #Adding user entry to database
-            user_ID = str(r.randint(0,9)) + str(r.randint(0,9)) + chr(r.randint(65, 90)) + chr(r.randint(65, 90))
-            db.execute("INSERT INTO player_table VALUES(?,?,?,?)", (user_ID, username.text, password.text, email.text))
-            db.commit()
+                
+    if login.mouse_click():
+        if login in labels:
+            start_type = "login"
+            labels = []
+            labels.append(enter)
+            textboxes.append(username)
+            textboxes.append(password)
+
+    if enter.mouse_click():
+        if enter in labels:
+            if start_type == "signup":
+                #Adding user entry to database
+                user_ID = str(r.randint(0,9)) + str(r.randint(0,9)) + chr(r.randint(65, 90)) + chr(r.randint(65, 90))
+                player_data = (user_ID, username.text, password.text, email.text)
+                db.execute("INSERT INTO player_table VALUES(?,?,?,?)", player_data)
+                db.commit()
+                
+                #Updating relevant variables and groups on start
+                textboxes = []
+                player_free = True
+                allSprites.add(player)
+                entities.add(room)
+                labels = []
+                weapons.add(player_weapon)
+                
+            if start_type == "login":
+                test_data = db.execute("SELECT * FROM player_table").fetchall()
+                for current in test_data:
+                    if username.text in current and password.text in current:
+                        #Updating relevant variables and groups on start
+                        textboxes = []
+                        player_free = True
+                        allSprites.add(player)
+                        entities.add(room)
+                        labels = []
+                        weapons.add(player_weapon)
+                        player_data = current
+                        break
+                    else:
+                        warning = Label(20, 230, "Wrong Username/Password", (550, 460), (60,0,0))
+                        labels.append(warning)
+                        warning_2 = Label(20,230, "Please Try Again", (550, 480), (60,0,0))
+                        labels.append(warning_2)
             
-            #Updating relevant variables and groups on start
-            textboxes = []
-            player_free = True
-            allSprites.add(player)
-            entities.add(room)
-            buttons.remove(play)
-            weapons.add(player_weapon)
-            
+            active_box = None
+            textbox_active = False
+                
 
     if mouse_left_down:
         
@@ -266,6 +315,7 @@ while running:
     if player.direction == 180:
         weapons.draw(mainScene)
     buttons.draw(mainScene)
+    draw_labels(labels, mainScene)
     draw_textbox(textboxes, mainScene)
     
     
