@@ -12,6 +12,7 @@ from assets.scripts.mask_handler.new_mask import *
 from assets.scripts.menus.main_start.main_menu import *
 from assets.scripts.room_handler.room_start import *
 from assets.scripts.database.database_start import *
+from assets.scripts.multipend import *
 from assets.scripts.button import *
 from assets.scripts.weapons import *
 from assets.scripts.text_entry import *
@@ -49,6 +50,7 @@ animation_time = 0.05
 current_frame = 0
 start_type = ""
 player_data = ()
+devmode = True
 
 #Starting the database
 db = database_initialise()
@@ -327,4 +329,26 @@ while running:
     clock.tick(FPS)
 
 pygame.quit()
-exit()
+
+
+
+if devmode:
+    running = True
+    allSprites = pygame.sprite.Group()
+    weapons = pygame.sprite.Group()
+    buttons = pygame.sprite.Group()
+    entities = pygame.sprite.Group()
+    textboxes = []
+    labels = []
+    mainScene = pygame.display.set_mode((800, 600))
+    pygame.init()
+    
+    player_table = Label(20, 200, "player_table", (200, 200), (0,0,0))
+    weapons_table = Label(20, 200, "weapons_table", (200, 230), (0,0,0))
+    rooms_table = Label(20, 200, "rooms_table", (200, 260), (0,0,0))
+    runs_table = Label(20, 200, "runs_table", (200, 290), (0,0,0))
+    labels = multipend(labels, (player_table, weapons_table, rooms_table, runs_table))
+    
+    while running:
+        
+        
