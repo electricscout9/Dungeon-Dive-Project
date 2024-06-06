@@ -330,25 +330,201 @@ while running:
 
 pygame.quit()
 
+def dev_initialise():
+    
+    print("\n\n================================================================================")
+    print("Please choose a table to manage:")
+    print("================================================================================")
+    print("1-Player Table")
+    
+    selection = input("Option: ")
+    return selection
 
+def print_player_table(table_data):
+    
+    username_max = len(table_data[0][1])
+    password_max = len(table_data[0][2])
+    email_max = len(table_data[0][3])
+    
+    if not isinstance(table_data[0], str):
+        for row in table_data:
+            
+            if len(row[1]) > username_max:
+                username_max = len(row[1])
+            if len(row[2]) > password_max:
+                password_max = len(row[2])
+            if len(row[3]) > email_max:
+                email_max = len(row[3])
+            
+    if username_max >= 9:
+        username_max -= 8
+    if password_max >= 8:
+        password_max -= 8
+    if email_max >= 5:
+        email_max -= 5
+        
+    
+    print("\n\n================================================================================")
+    print("Player_ID|Username"+username_max*" "+"|Password"+password_max*" "+"|Email"+email_max*" "+"|")
+    print("---------|--------"+username_max*"-"+"|--------"+password_max*"-"+"|-----"+email_max*"-"+"|")
+        
+    if not isinstance(table_data[0], str):
+        for row in table_data:
+            print(""+row[0]+"     |", end="")
+            print(row[1]+(username_max-len(row[1])+8)*" "+"|", end="")
+            print(row[2]+(password_max-len(row[2])+8)*" "+"|", end="")
+            print(row[3]+(email_max-len(row[3])+5)*" "+"|")
+    else:
+        print(""+row[0]+"     |", end="")
+        print(row[1]+(username_max-len(row[1])+8)*" "+"|", end="")
+        print(row[2]+(password_max-len(row[2])+8)*" "+"|", end="")
+        print(row[3]+(email_max-len(row[3])+5)*" "+"|")
 
+def player_table():
+
+    player_table_data = db.execute("SELECT * FROM player_table").fetchall()
+
+    print("\n\n================================================================================")
+    print("Please choose an action to perform on the player table:")
+    print("================================================================================")
+    print("1-View All Data")
+    print("2-Add New Row")
+    print("3-Edit Existing Row")
+    print("4-Delete Row")
+    
+    selection = input("Option: ")
+    
+    if selection == "1":
+        
+        print_player_table(player_table_data)
+    
+    elif selection == "2":
+        
+        data_correct = False
+        confirmed_valid = False
+        
+        while not data_correct:
+            print("\n\n================================================================================")
+            print("Please enter the username for the row you wish to add: ")
+            
+            new_username = input("Username: ")
+            print("Please enter the password for the row you wish to add: ")
+            
+            new_password = input("Password: ")
+            print("Please enter the email for the row you wish to add: ")
+            
+            new_email = input("Email: ")
+            
+            new_ID = str(r.randint(0,9)) + str(r.randint(0,9)) + chr(r.randint(65, 90)) + chr(r.randint(65, 90))
+            
+            new_row = [new_ID, new_username, new_password, new_email]
+
+            print_player_table(new_row)
+            
+            confirmation = input("\nY/N: ")
+            
+            while not confirmed_valid:
+                if confirmation.upper() == "Y":
+                    data_correct = True
+                    confirmed_valid = True
+                elif confirmation.upper() == "N":
+                    data_correct = False
+                    confirmed_valid = True
+                else:
+                    confirmation = input("\nY/N")
+                    
+            db.execute("INSERT INTO player_table VALUES(?,?,?,?)", new_row)
+            db.commit()
+            
+            print("\n================================================================================")
+            print("Row Successfully Added!")
+            print("================================================================================")
+    
+    elif selection == "3":
+            
+        print("\n\n================================================================================")
+        print("Choose a row to edit:")
+        print("================================================================================")
+        
+        print_player_table(player_table_data)
+            
+        selected_ID = input("Enter ID: ").upper()
+        
+        selected_row = db.execute(f"SELECT * FROM player_table WHERE player_ID='{selected_ID}'").fetchone()
+        
+        data_correct = False
+        confirmed_valid = False
+        
+        while not data_correct:
+          
+            new_username = input("Please enter the new username: ")
+                
+            new_password = input("Please enter the new password: ")
+
+            new_email = input("Please enter the new email: ")
+            
+            new_row = [selected_row[0], new_username, new_password, new_email]
+
+            print_player_table(new_row)
+            
+            confirmation = input("\nY/N: ")
+            
+            while not confirmed_valid:
+                if confirmation.upper() == "Y":
+                    data_correct = True
+                    confirmed_valid = True
+                elif confirmation.upper() == "N":
+                    data_correct = False
+                    confirmed_valid = True
+                else:
+                    confirmation = input("\nY/N")
+                    
+            db.execute(f"DELETE FROM player_table WHERE player_ID='{new_row[0]}'")
+            db.execute(f"INSERT INTO player_table VALUES(?,?,?,?)", new_row)
+            db.commit()
+            
+            print("================================================================================")
+            print("Row Successfully Changed!")
+            print("================================================================================")
+        
+    elif selection == "4":
+        
+        print("\n\n================================================================================")
+        print("Choose a row to delete:")
+        print("================================================================================")
+        
+        print_player_table(player_table_data)
+            
+        selected_ID = input("Enter ID: ").upper()
+        
+        selected_row = db.execute(f"SELECT * FROM player_table WHERE player_ID='{selected_ID}'").fetchone()
+        
+        print(f"\nAre you sure you wish to delete the row with ID (Y/N): ")
+        
+        confirmed_valid = False
+        
+        while not confirmed_valid:
+                if confirmation.upper() == "Y":
+                    confirmed_valid = True
+                elif confirmation.upper() == "N":
+                    confirmed_valid = True
+                else:
+                    confirmation = input("\nY/N")
+                    
+        db.execute(f"DELETE FROM player_table WHERE player_ID='selected_ID'")
+        db.commit()
+            
+        print("================================================================================")
+        print("Row Successfully Deleted!")
+        print("================================================================================")
+        
+        
+    
 if devmode:
     running = True
-    allSprites = pygame.sprite.Group()
-    weapons = pygame.sprite.Group()
-    buttons = pygame.sprite.Group()
-    entities = pygame.sprite.Group()
-    textboxes = []
-    labels = []
-    mainScene = pygame.display.set_mode((800, 600))
-    pygame.init()
-    
-    player_table = Label(20, 200, "player_table", (200, 200), (0,0,0))
-    weapons_table = Label(20, 200, "weapons_table", (200, 230), (0,0,0))
-    rooms_table = Label(20, 200, "rooms_table", (200, 260), (0,0,0))
-    runs_table = Label(20, 200, "runs_table", (200, 290), (0,0,0))
-    labels = multipend(labels, (player_table, weapons_table, rooms_table, runs_table))
-    
     while running:
         
+        choice = dev_initialise()
         
+        if choice == "1":
+            player_table()
