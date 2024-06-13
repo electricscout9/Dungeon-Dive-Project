@@ -18,6 +18,14 @@ def database_initialise():
                 username TEXT,
                 password TEXT,
                 email TEXT)""")
+        
+        db.execute("""CREATE TABLE weapon_table(
+                weapon_ID TEXT PRIMARY KEY,
+                spritesheet TEXT,
+                damage TEXT,
+                frame_time TEXT)""")
+        
         db.commit()
+        
         
     return db

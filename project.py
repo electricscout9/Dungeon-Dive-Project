@@ -10,7 +10,7 @@ from assets.scripts.player_handler.player_start import *
 from assets.scripts.player_handler.player_mov import *
 from assets.scripts.mask_handler.new_mask import *
 from assets.scripts.menus.main_start.main_menu import *
-from assets.scripts.room_handler.room_start import *
+from assets.scripts.room_handler import *
 from assets.scripts.database.database_start import *
 from assets.scripts.multipend import *
 from assets.scripts.button import *
@@ -50,7 +50,16 @@ animation_time = 0.05
 current_frame = 0
 start_type = ""
 player_data = ()
-devmode = True
+devmode = False
+first = True
+
+room_width = 800
+room_height = 600
+
+room_map = [[None,None,None],
+            [None,"\\assets\\sprites\\rooms\\test_background.png",None],
+            [None,None,None]]
+map_coordinate = [1,1]
 
 #Starting the database
 db = database_initialise()
@@ -64,13 +73,14 @@ mainScene = pygame.display.set_mode((800, 600))
 #Intitiallising the player character
 player = make_player(path)
 
-#Initiallising the first room
-room = Room(300, 400, path + "\\assets\\sprites\\rooms\\test_background.png", 2)
+
+room = Room(room_height, room_width, path + room_map[map_coordinate[0]][map_coordinate[1]], 2)
 room = create_mask(room, (0,0,0,255))
 
+
 #Initiallising the players weapon
-player_weapon = melee_weapon(path + "\\assets\\sprites\\weapons\\sword.png")
-player_weapon = player_weapon.image_at(player_weapon.current_rect)
+player_weapon_data = db.execute("SELECT * FROM weapon_table WHERE weapon_ID ='001'").fetchone()
+player_weapon = melee_weapon(path, player_weapon_data)
 
 #Initiallising the start screen
 login = Label(20,60,"Log In", (400,200), (0,0,0))
@@ -96,6 +106,8 @@ email = Textbox(20, 110, [100,160], (20,20,20), (255,255,255), "Email:")
 
 
 
+
+
 while running:
     
     #Updating the clock and relevant variables
@@ -104,10 +116,33 @@ while running:
     speed = 200*dt
     
     
+    animation_time = player_weapon.animation_speed
+    
+    
+    if player.rect.x > 400:
+        if first:
+            weapons.remove(player_weapon)
+            player_weapon = melee_weapon(path, db.execute("SELECT * FROM weapon_table WHERE weapon_ID='002'").fetchone())
+            weapons.add(player_weapon)
+            first = False
+    
     #Resetting mouse inputs
     button_hover = False
     mouse_left_down = False
     
+    
+    room = Room(room_height, room_width, path + room_map[map_coordinate[0]][map_coordinate[1]], 2)
+    room = create_mask(room, (0,0,0,255))
+    
+    
+    player, map_coordinate, changed_room = room_change(player, map_coordinate, room)
+    
+    if changed_room:
+        room = Room(room_height, room_width, path + room_map[map_coordinate[0]][map_coordinate[1]], 2)
+        room = create_mask(room, (0,0,0,255))
+    
+    
+        
     
     #Aquiring mouse states
     mouse_state = pygame.mouse.get_pressed()
@@ -336,6 +371,7 @@ def dev_initialise():
     print("Please choose a table to manage:")
     print("================================================================================")
     print("1-Player Table")
+    print("2-Weapon Table")
     
     selection = input("Option: ")
     return selection
@@ -355,6 +391,13 @@ def print_player_table(table_data):
                 password_max = len(row[2])
             if len(row[3]) > email_max:
                 email_max = len(row[3])
+    else:
+        if len(table_data[1]) > username_max:
+            username_max = len(table_data[1])
+        if len(table_data[2]) > password_max:
+            password_max = len(table_data[2])
+        if len(table_data[3]) > email_max:
+            email_max = len(table_data[3])
             
     if username_max >= 9:
         username_max -= 8
@@ -375,12 +418,12 @@ def print_player_table(table_data):
             print(row[2]+(password_max-len(row[2])+8)*" "+"|", end="")
             print(row[3]+(email_max-len(row[3])+5)*" "+"|")
     else:
-        print(""+row[0]+"     |", end="")
-        print(row[1]+(username_max-len(row[1])+8)*" "+"|", end="")
-        print(row[2]+(password_max-len(row[2])+8)*" "+"|", end="")
-        print(row[3]+(email_max-len(row[3])+5)*" "+"|")
+        print(""+table_data[0]+"     |", end="")
+        print(table_data[1]+(username_max-len(table_data[1])+8)*" "+"|", end="")
+        print(table_data[2]+(password_max-len(table_data[2])+8)*" "+"|", end="")
+        print(table_data[3]+(email_max-len(table_data[3])+5)*" "+"|")
 
-def player_table():
+def player_table(player_table_active):
 
     player_table_data = db.execute("SELECT * FROM player_table").fetchall()
 
@@ -391,6 +434,7 @@ def player_table():
     print("2-Add New Row")
     print("3-Edit Existing Row")
     print("4-Delete Row")
+    print("5-Exit To Tables Viewer")
     
     selection = input("Option: ")
     
@@ -499,7 +543,7 @@ def player_table():
         
         selected_row = db.execute(f"SELECT * FROM player_table WHERE player_ID='{selected_ID}'").fetchone()
         
-        print(f"\nAre you sure you wish to delete the row with ID (Y/N): ")
+        confirmation = input(f"\nAre you sure you wish to delete the row with ID {selected_ID}(Y/N): ")
         
         confirmed_valid = False
         
@@ -511,20 +555,229 @@ def player_table():
                 else:
                     confirmation = input("\nY/N")
                     
-        db.execute(f"DELETE FROM player_table WHERE player_ID='selected_ID'")
+        db.execute(f"DELETE FROM player_table WHERE player_ID='{selected_ID}'")
         db.commit()
             
         print("================================================================================")
         print("Row Successfully Deleted!")
         print("================================================================================")
+    elif selection == "5":
         
+        player_table_active = False
+    return player_table_active
+
+def print_weapon_table(table_data):
+    
+    
+
+    
+    if not isinstance(table_data[0], str):
+        
+        spritesheet_max = len(table_data[0][1])
+        damage_max = len(table_data[0][2])
+        frame_time_max = len(table_data[0][3])
+        
+        for row in table_data:
+            
+            if len(row[1]) > spritesheet_max:
+                spritesheet_max = len(row[1])
+            if len(row[2]) > damage_max:
+                damage_max = len(row[2])
+            if len(row[3]) > frame_time_max:
+                frame_time_max = len(row[3])
+    else:
+        
+        spritesheet_max = len(table_data[1])
+        damage_max = len(table_data[2])
+        frame_time_max = len(table_data[3])
+        
+        if len(table_data[1]) > spritesheet_max:
+            spritesheet_max = len(table_data[1])
+        if len(table_data[2]) > damage_max:
+            damage_max = len(table_data[2])
+        if len(table_data[3]) > frame_time_max:
+            frame_time_max = len(table_data[3])
+            
+    if spritesheet_max >= 12:
+        spritesheet_max -= 11
+    if damage_max >= 6:
+        damage_max -= 6
+    if frame_time_max >= 10:
+        frame_time_max -= 10
+        
+    
+    print("\n\n================================================================================")
+    print("Weapon_ID|Spritesheet"+spritesheet_max*" "+"|Damage"+damage_max*" "+"|Frame Time"+frame_time_max*" "+"|")
+    print("---------|-----------"+spritesheet_max*"-"+"|------"+damage_max*"-"+"|----------"+frame_time_max*"-"+"|")
+        
+    if not isinstance(table_data[0], str):
+        for row in table_data:
+            print(""+row[0]+"      |", end="")
+            print(row[1]+(spritesheet_max-len(row[1])+11)*" "+"|", end="")
+            print(row[2]+(damage_max-len(row[2])+6)*" "+"|", end="")
+            print(row[3]+(frame_time_max-len(row[3])+10)*" "+"|")
+    else:
+        print(""+table_data[0]+"      |", end="")
+        print(table_data[1]+(spritesheet_max-len(table_data[1])+11)*" "+"|", end="")
+        print(table_data[2]+(damage_max-len(table_data[2])+6)*" "+"|", end="")
+        print(table_data[3]+(frame_time_max-len(table_data[3])+10)*" "+"|")
+
+def weapon_table(weapon_table_active):
+      
+    weapon_table_data = db.execute("SELECT * FROM weapon_table").fetchall()
+
+    print("\n\n================================================================================")
+    print("Please choose an action to perform on the weapon table:")
+    print("================================================================================")
+    print("1-View All Data")
+    print("2-Add New Row")
+    print("3-Edit Existing Row")
+    print("4-Delete Row")
+    print("5-Exit To Tables Viewer")
+    
+    selection = input("Option: ")
+    
+    if selection == "1":
+        
+        print_weapon_table(weapon_table_data)
+    
+    elif selection == "2":
+        
+        data_correct = False
+        confirmed_valid = False
+        
+        while not data_correct:
+            print("\n\n================================================================================")
+            print("Please enter the ID for the weapon you wish to add:")
+            new_ID = input("ID: ")
+            
+            print("Please enter the spritesheet path for the row you wish to add: ")
+            
+            new_spritesheet = input("Spritesheet: ")
+            print("Please enter the damage for the row you wish to add: ")
+            
+            new_damage = input("Damage: ")
+            print("Please enter the frame Time for the row you wish to add: ")
+            
+            new_email = input("Frame Time: ")
+            
+            new_row = [new_ID, new_spritesheet, new_damage, new_email]
+
+            print_weapon_table(new_row)
+            
+            confirmation = input("\nY/N: ")
+            
+            while not confirmed_valid:
+                if confirmation.upper() == "Y":
+                    data_correct = True
+                    confirmed_valid = True
+                elif confirmation.upper() == "N":
+                    data_correct = False
+                    confirmed_valid = True
+                else:
+                    confirmation = input("\nY/N")
+                    
+        db.execute("INSERT INTO weapon_table VALUES(?,?,?,?)", new_row)
+        db.commit()
+            
+        print("\n================================================================================")
+        print("Row Successfully Added!")
+        print("================================================================================")
+    
+    elif selection == "3":
+            
+        print("\n\n================================================================================")
+        print("Choose a row to edit:")
+        print("================================================================================")
+        
+        print_weapon_table(weapon_table_data)
+            
+        selected_ID = input("Enter ID: ").upper()
+        
+        selected_row = db.execute(f"SELECT * FROM weapon_table WHERE weapon_ID='{selected_ID}'").fetchone()
+        
+        data_correct = False
+        confirmed_valid = False
+        
+        while not data_correct:
+          
+            new_spritesheet = input("Please enter the new spritesheet path: ")
+                
+            new_damage = input("Please enter the new damage: ")
+
+            new_frame_time = input("Please enter the new frame time: ")
+            
+            new_row = [selected_row[0], new_spritesheet, new_damage, new_frame_time]
+
+            print_weapon_table(new_row)
+            
+            confirmation = input("\nY/N: ")
+            
+            while not confirmed_valid:
+                if confirmation.upper() == "Y":
+                    data_correct = True
+                    confirmed_valid = True
+                elif confirmation.upper() == "N":
+                    data_correct = False
+                    confirmed_valid = True
+                else:
+                    confirmation = input("\nY/N")
+                    
+            db.execute(f"DELETE FROM weapon_table WHERE weapon_ID='{new_row[0]}'")
+            db.execute(f"INSERT INTO weapon_table VALUES(?,?,?,?)", new_row)
+            db.commit()
+            
+            print("================================================================================")
+            print("Row Successfully Changed!")
+            print("================================================================================")
+        
+    elif selection == "4":
+        
+        print("\n\n================================================================================")
+        print("Choose a row to delete:")
+        print("================================================================================")
+        
+        print_weapon_table(weapon_table_data)
+            
+        selected_ID = input("Enter ID: ").upper()
+        
+        selected_row = db.execute(f"SELECT * FROM weapon_table WHERE weapon_ID='{selected_ID}'").fetchone()
+        
+        confirmation = input(f"\nAre you sure you wish to delete the row with ID {selected_ID}(Y/N): ")
+        
+        confirmed_valid = False
+        
+        while not confirmed_valid:
+                if confirmation.upper() == "Y":
+                    confirmed_valid = True
+                elif confirmation.upper() == "N":
+                    confirmed_valid = True
+                else:
+                    confirmation = input("\nY/N")
+                    
+        db.execute(f"DELETE FROM weapon_table WHERE weapon_ID='{selected_ID}'")
+        db.commit()
+            
+        print("================================================================================")
+        print("Row Successfully Deleted!")
+        print("================================================================================")
+    elif selection == "5":
+        
+        weapon_table_active = False
+    return weapon_table_active
         
     
 if devmode:
+    
     running = True
     while running:
-        
+        player_table_active = True
+        weapon_table_active = True
         choice = dev_initialise()
         
         if choice == "1":
-            player_table()
+            while player_table_active:
+                player_table_active = player_table(player_table_active)
+        elif choice == "2":
+            while weapon_table_active:
+                weapon_table_active = weapon_table(weapon_table_active)
