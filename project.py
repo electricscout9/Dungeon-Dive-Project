@@ -41,7 +41,7 @@ player_hand = [0,0]  #Player hand location
 vect_move = [0,0]  #Player movement vector
 button_hover = False  #Mouse hovering button
 mouse_left_down = 0  #Left mouse button down
-running = True
+running = False
 player_free = False
 startup = True
 background = "White"
@@ -50,14 +50,14 @@ animation_time = 0.05
 current_frame = 0
 start_type = ""
 player_data = ()
-devmode = False
+devmode = True
 first = True
 
 room_width = 800
 room_height = 600
 
 room_map = [[None,None,None],
-            [None,"\\assets\\sprites\\rooms\\test_background.png",None],
+            [None,"\\assets\\sprites\\rooms\\test_background.png","\\assets\\sprites\\rooms\\test_background_1.png"],
             [None,None,None]]
 map_coordinate = [1,1]
 
@@ -79,8 +79,8 @@ room = create_mask(room, (0,0,0,255))
 
 
 #Initiallising the players weapon
-player_weapon_data = db.execute("SELECT * FROM weapon_table WHERE weapon_ID ='001'").fetchone()
-player_weapon = melee_weapon(path, player_weapon_data)
+#player_weapon_data = db.execute("SELECT * FROM weapon_table WHERE weapon_ID ='001'").fetchone()
+#player_weapon = melee_weapon(path, player_weapon_data)
 
 #Initiallising the start screen
 login = Label(20,60,"Log In", (400,200), (0,0,0))
@@ -101,11 +101,7 @@ active_box = None
 
 password = Textbox(20, 110, [100,130], (20,20,20), (255,255,255), "Password:")
 
-
 email = Textbox(20, 110, [100,160], (20,20,20), (255,255,255), "Email:")
-
-
-
 
 
 while running:
@@ -129,17 +125,16 @@ while running:
     #Resetting mouse inputs
     button_hover = False
     mouse_left_down = False
-    
-    
-    room = Room(room_height, room_width, path + room_map[map_coordinate[0]][map_coordinate[1]], 2)
-    room = create_mask(room, (0,0,0,255))
-    
+        
     
     player, map_coordinate, changed_room = room_change(player, map_coordinate, room)
-    
     if changed_room:
+        entities.remove(room)
         room = Room(room_height, room_width, path + room_map[map_coordinate[0]][map_coordinate[1]], 2)
+        entities.add(room)
+        changed_room = False
         room = create_mask(room, (0,0,0,255))
+    
     
     
         
@@ -372,9 +367,21 @@ def dev_initialise():
     print("================================================================================")
     print("1-Player Table")
     print("2-Weapon Table")
+    print("3-Room Table")
     
     selection = input("Option: ")
     return selection
+
+def input_row(row):
+    
+    new = []
+    
+    print("\n\n================================================================================")
+    for thing in row:
+        new.append(input("Please enter the "+ str(thing) + ":"))
+    
+    return new
+    
 
 def print_player_table(table_data):
     
@@ -448,20 +455,8 @@ def player_table(player_table_active):
         confirmed_valid = False
         
         while not data_correct:
-            print("\n\n================================================================================")
-            print("Please enter the username for the row you wish to add: ")
             
-            new_username = input("Username: ")
-            print("Please enter the password for the row you wish to add: ")
-            
-            new_password = input("Password: ")
-            print("Please enter the email for the row you wish to add: ")
-            
-            new_email = input("Email: ")
-            
-            new_ID = str(r.randint(0,9)) + str(r.randint(0,9)) + chr(r.randint(65, 90)) + chr(r.randint(65, 90))
-            
-            new_row = [new_ID, new_username, new_password, new_email]
+            new_row = [str(r.randint(0,9)) + str(r.randint(0,9)) + chr(r.randint(65, 90)) + chr(r.randint(65, 90))] + input_row(["Username", "Password", "Email"])
 
             print_player_table(new_row)
             
@@ -500,14 +495,8 @@ def player_table(player_table_active):
         confirmed_valid = False
         
         while not data_correct:
-          
-            new_username = input("Please enter the new username: ")
-                
-            new_password = input("Please enter the new password: ")
-
-            new_email = input("Please enter the new email: ")
             
-            new_row = [selected_row[0], new_username, new_password, new_email]
+            new_row = [selected_row[0]] + input_row(["Username", "Password", "Email"])
 
             print_player_table(new_row)
             
@@ -567,9 +556,6 @@ def player_table(player_table_active):
     return player_table_active
 
 def print_weapon_table(table_data):
-    
-    
-
     
     if not isinstance(table_data[0], str):
         
@@ -637,6 +623,7 @@ def weapon_table(weapon_table_active):
     
     selection = input("Option: ")
     
+    
     if selection == "1":
         
         print_weapon_table(weapon_table_data)
@@ -647,22 +634,9 @@ def weapon_table(weapon_table_active):
         confirmed_valid = False
         
         while not data_correct:
-            print("\n\n================================================================================")
-            print("Please enter the ID for the weapon you wish to add:")
-            new_ID = input("ID: ")
             
-            print("Please enter the spritesheet path for the row you wish to add: ")
+            new_row = input_row(["ID","Spritesheet", "Damage", "Frame Time"])
             
-            new_spritesheet = input("Spritesheet: ")
-            print("Please enter the damage for the row you wish to add: ")
-            
-            new_damage = input("Damage: ")
-            print("Please enter the frame Time for the row you wish to add: ")
-            
-            new_email = input("Frame Time: ")
-            
-            new_row = [new_ID, new_spritesheet, new_damage, new_email]
-
             print_weapon_table(new_row)
             
             confirmation = input("\nY/N: ")
@@ -701,13 +675,8 @@ def weapon_table(weapon_table_active):
         
         while not data_correct:
           
-            new_spritesheet = input("Please enter the new spritesheet path: ")
-                
-            new_damage = input("Please enter the new damage: ")
-
-            new_frame_time = input("Please enter the new frame time: ")
             
-            new_row = [selected_row[0], new_spritesheet, new_damage, new_frame_time]
+            new_row = [selected_row[0]] + input_row(["ID","Spritesheet", "Damage", "Frame Time"])
 
             print_weapon_table(new_row)
             
@@ -765,7 +734,178 @@ def weapon_table(weapon_table_active):
         
         weapon_table_active = False
     return weapon_table_active
+
+
+def print_room_table(table_data):
+    
+    if not isinstance(table_data[0], str):
         
+        sprite_max = len(table_data[0][1])
+        enemies_max = len(table_data[0][2])
+        
+        for row in table_data:
+            
+            if len(row[1]) > sprite_max:
+                sprite_max = len(row[1])
+            if len(row[2]) > enemies_max:
+                enemies_max = len(row[2])
+
+    else:
+        
+        sprite_max = len(table_data[1])
+        enemies_max = len(table_data[2])
+        
+        if len(table_data[1]) > sprite_max:
+            sprite_max = len(table_data[1])
+        if len(table_data[2]) > enemies_max:
+            enemies_max = len(table_data[2])
+
+    if sprite_max >= 7:
+        sprite_max -= 6
+    if enemies_max >= 7:
+        enemies_max -= 7
+
+        
+    
+    print("\n\n================================================================================")
+    print("Room_ID|Sprite"+sprite_max*" "+"|Enemies"+enemies_max*" "+"|")
+    print("-------|------"+sprite_max*"-"+"|-------"+enemies_max*"-"+"|")
+        
+    if not isinstance(table_data[0], str):
+        for row in table_data:
+            print(""+row[0]+"    |", end="")
+            print(row[1]+(sprite_max-len(row[1])+6)*" "+"|", end="")
+            print(row[2]+(enemies_max-len(row[2])+7)*" "+"|")
+
+    else:
+        print(""+table_data[0]+"    |", end="")
+        print(table_data[1]+(sprite_max-len(table_data[1])+6)*" "+"|", end="")
+        print(table_data[2]+(enemies_max-len(table_data[2])+7)*" "+"|")
+ 
+def room_table(room_table_active):
+      
+    room_table_data = db.execute("SELECT * FROM room_table").fetchall()
+
+    print("\n\n================================================================================")
+    print("Please choose an action to perform on the room table:")
+    print("================================================================================")
+    print("1-View All Data")
+    print("2-Add New Row")
+    print("3-Edit Existing Row")
+    print("4-Delete Row")
+    print("5-Exit To Tables Viewer")
+    
+    selection = input("Option: ")
+    
+    if selection == "1":
+        
+        print_room_table(room_table_data)
+    
+    elif selection == "2":
+        
+        data_correct = False
+        confirmed_valid = False
+        
+        while not data_correct:
+            
+            new_row = input_row(["ID", "Sprite", "# Enemies"])
+
+            print_room_table(new_row)
+            
+            confirmation = input("\nY/N: ")
+            
+            while not confirmed_valid:
+                if confirmation.upper() == "Y":
+                    data_correct = True
+                    confirmed_valid = True
+                elif confirmation.upper() == "N":
+                    data_correct = False
+                    confirmed_valid = True
+                else:
+                    confirmation = input("\nY/N")
+                    
+        db.execute("INSERT INTO room_table VALUES(?,?,?,?)", new_row)
+        db.commit()
+            
+        print("\n================================================================================")
+        print("Row Successfully Added!")
+        print("================================================================================")
+    
+    elif selection == "3":
+            
+        print("\n\n================================================================================")
+        print("Choose a row to edit:")
+        print("================================================================================")
+        
+        print_room_table(room_table_data)
+            
+        selected_ID = input("Enter ID: ").upper()
+        
+        selected_row = db.execute(f"SELECT * FROM room_table WHERE room_ID='{selected_ID}'").fetchone()
+        
+        data_correct = False
+        confirmed_valid = False
+        
+        while not data_correct:
+
+            new_row = [selected_row[0]] + input_row(["ID", "Sprite", "# Enemies"])
+
+            print_room_table(new_row)
+            
+            confirmation = input("\nY/N: ")
+            
+            while not confirmed_valid:
+                if confirmation.upper() == "Y":
+                    data_correct = True
+                    confirmed_valid = True
+                elif confirmation.upper() == "N":
+                    data_correct = False
+                    confirmed_valid = True
+                else:
+                    confirmation = input("\nY/N")
+                    
+            db.execute(f"DELETE FROM room_table WHERE room_ID='{new_row[0]}'")
+            db.execute(f"INSERT INTO room_table VALUES(?,?,?,?)", new_row)
+            db.commit()
+            
+            print("================================================================================")
+            print("Row Successfully Changed!")
+            print("================================================================================")
+        
+    elif selection == "4":
+        
+        print("\n\n================================================================================")
+        print("Choose a row to delete:")
+        print("================================================================================")
+        
+        print_room_table(room_table_data)
+            
+        selected_ID = input("Enter ID: ").upper()
+        
+        selected_row = db.execute(f"SELECT * FROM room_table WHERE room_ID='{selected_ID}'").fetchone()
+        
+        confirmation = input(f"\nAre you sure you wish to delete the row with ID {selected_ID}(Y/N): ")
+        
+        confirmed_valid = False
+        
+        while not confirmed_valid:
+                if confirmation.upper() == "Y":
+                    confirmed_valid = True
+                elif confirmation.upper() == "N":
+                    confirmed_valid = True
+                else:
+                    confirmation = input("\nY/N")
+                    
+        db.execute(f"DELETE FROM room_table WHERE room_ID='{selected_ID}'")
+        db.commit()
+            
+        print("================================================================================")
+        print("Row Successfully Deleted!")
+        print("================================================================================")
+    elif selection == "5":
+        
+        room_table_active = False
+    return room_table_active       
     
 if devmode:
     
@@ -773,6 +913,7 @@ if devmode:
     while running:
         player_table_active = True
         weapon_table_active = True
+        room_table_active = True
         choice = dev_initialise()
         
         if choice == "1":
@@ -781,3 +922,6 @@ if devmode:
         elif choice == "2":
             while weapon_table_active:
                 weapon_table_active = weapon_table(weapon_table_active)
+        elif choice == "3":
+            while room_table_active:
+                room_table_active = room_table(room_table_active)

@@ -1,5 +1,5 @@
 import pygame
-from assets.scripts.mask_handler.new_mask import *
+#from assets.scripts.mask_handler.new_mask import *
 
 
 class Room(pygame.sprite.Sprite):
@@ -26,7 +26,7 @@ def room_change(player, map_coordinate, room):
         changed = True
     if player.rect.x < 0:
         map_coordinate[1] -= 1
-        player.x = room.width - player.width
+        player.rect.x = room.width - player.width
         changed = True
     if player.rect.y > room.height:
         map_coordinate[0] += 1
@@ -36,5 +36,7 @@ def room_change(player, map_coordinate, room):
         map_coordinate[0] -= 1
         player.rect.y = room.height - player.height
         changed = True
+        
+    
     
     return player, map_coordinate, changed

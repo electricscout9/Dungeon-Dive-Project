@@ -24,8 +24,13 @@ def database_initialise():
                 spritesheet TEXT,
                 damage TEXT,
                 frame_time TEXT)""")
+        db.execute("""CREATE TABLE room_table(
+                room_ID TEXT PRIMARY KEY,
+                sprite TEXT,
+                enemies TEXT)""")
         
         db.commit()
+        
         
         
     return db
