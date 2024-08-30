@@ -84,9 +84,9 @@ def player_move(player, vect_move, entities):
                     if not pygame.sprite.collide_mask(player, entity):
                         break
                     player.rect.y += displace
-            if pygame.sprite.collide_mask(player, entity):
-                player.rect.x -= vect_move[0]
-                vect_move[0] = 0
+            #if pygame.sprite.collide_mask(player, entity):
+            #    player.rect.x -= vect_move[0]
+            #    vect_move[0] = 0
         player.rect.y += vect_move[1]
         if pygame.sprite.collide_mask(player, entity):
             if ((vect_move[1]==0 and vect_move[0] != 0) or (vect_move[1]!=0 and vect_move[0]==0)) and (player.rect.x <= 790 and player.rect.x >= 10) and (player.rect.y >=10 and player.rect.y <= 590):
@@ -100,9 +100,9 @@ def player_move(player, vect_move, entities):
                     if not pygame.sprite.collide_mask(player, entity):
                         break
                     player.rect.x += displace
-            if pygame.sprite.collide_mask(player, entity):
-                player.rect.y -= vect_move[1]
-                vect_move[1] = 0
+            #if pygame.sprite.collide_mask(player, entity):
+            #    player.rect.y -= vect_move[1]
+            #    vect_move[1] = 0
     
     
     if vect_move[0] < 0:

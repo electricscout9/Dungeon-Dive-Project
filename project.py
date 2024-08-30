@@ -1,9 +1,16 @@
+#To Do:
+#-Adding Enemies
+#-Adding Score
+#-Finishing Database
+#-New Sprites
+#-Seperating Player Scripts from Players
+
 #Importing libraries
 import pygame
 import sqlite3 as sql
 import pathlib
-import math
 import random as r
+
 
 #Importing relevant functions
 from assets.scripts.player_handler.player_start import *
@@ -29,6 +36,9 @@ entities = pygame.sprite.Group()
 textboxes = []
 labels = []
 
+#Starting the database
+db = database_initialise()
+
 
 #Declaring variables
 FPS = 60
@@ -41,7 +51,7 @@ player_hand = [0,0]  #Player hand location
 vect_move = [0,0]  #Player movement vector
 button_hover = False  #Mouse hovering button
 mouse_left_down = 0  #Left mouse button down
-running = False
+running = True
 player_free = False
 startup = True
 background = "White"
@@ -57,12 +67,11 @@ room_width = 800
 room_height = 600
 
 room_map = [[None,None,None],
-            [None,"\\assets\\sprites\\rooms\\test_background.png","\\assets\\sprites\\rooms\\test_background_1.png"],
+            [None,None,None],
             [None,None,None]]
+room_map = map_rooms(room_map, db)
 map_coordinate = [1,1]
 
-#Starting the database
-db = database_initialise()
 
 #Finding location of 'project' folder
 path = str(pathlib.Path.cwd())
@@ -79,8 +88,8 @@ room = create_mask(room, (0,0,0,255))
 
 
 #Initiallising the players weapon
-#player_weapon_data = db.execute("SELECT * FROM weapon_table WHERE weapon_ID ='001'").fetchone()
-#player_weapon = melee_weapon(path, player_weapon_data)
+player_weapon_data = db.execute("SELECT * FROM weapon_table WHERE weapon_ID ='001'").fetchone()
+player_weapon = melee_weapon(path, player_weapon_data)
 
 #Initiallising the start screen
 login = Label(20,60,"Log In", (400,200), (0,0,0))
@@ -676,7 +685,7 @@ def weapon_table(weapon_table_active):
         while not data_correct:
           
             
-            new_row = [selected_row[0]] + input_row(["ID","Spritesheet", "Damage", "Frame Time"])
+            new_row = [selected_row[0]] + input_row(["Spritesheet", "Damage", "Frame Time"])
 
             print_weapon_table(new_row)
             
@@ -809,7 +818,6 @@ def room_table(room_table_active):
         while not data_correct:
             
             new_row = input_row(["ID", "Sprite", "# Enemies"])
-
             print_room_table(new_row)
             
             confirmation = input("\nY/N: ")
@@ -824,7 +832,7 @@ def room_table(room_table_active):
                 else:
                     confirmation = input("\nY/N")
                     
-        db.execute("INSERT INTO room_table VALUES(?,?,?,?)", new_row)
+        db.execute("INSERT INTO room_table VALUES(?,?,?)", new_row)
         db.commit()
             
         print("\n================================================================================")
