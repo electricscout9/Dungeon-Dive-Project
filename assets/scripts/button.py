@@ -47,12 +47,8 @@ class Label(pygame.sprite.Sprite):
         mouse_position = pygame.mouse.get_pos()
         
         if self.rect.collidepoint(mouse_position):
-            if pygame.mouse.get_pressed()[0] == 1 and self.state == False:
-                self.state = True
+            if pygame.mouse.get_pressed()[0] == 1 :
                 return True
-        
-        if pygame.mouse.get_pressed()[0] == 0:
-            self.state = False
             
 def draw_labels(labels, screen):
     for label in labels:

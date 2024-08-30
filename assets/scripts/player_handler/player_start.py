@@ -6,6 +6,11 @@ class Sprite(pygame.sprite.Sprite):
     def __init__(self, height, width, img, scale, hand_pos):
         super().__init__()
         
+        self.image_folder = img
+        
+        self.attack = False
+        self.health = 0
+        
         self.image = pygame.image.load(img)
         self.image = pygame.transform.scale(self.image, (width*scale, height*scale))
         self.image.set_colorkey((255,255,255))
@@ -23,4 +28,5 @@ def make_player(path):
     player = create_mask(player, (32,32,31,255))
     player.rect.x = 50
     player.rect.y = 50
+    player.health = 3
     return player

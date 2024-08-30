@@ -22,8 +22,6 @@ def room_change(player, map_coordinate, room):
     
     changed = False
     
-    print((map_coordinate[0]-1>=0 and map_coordinate[0]-1<=2))
-    
     if player.rect.x > room.width:
         if (map_coordinate[1]+1>=0 and map_coordinate[1]+1<=2):
             map_coordinate[1] += 1

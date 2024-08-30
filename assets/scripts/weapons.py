@@ -20,6 +20,7 @@ class melee_weapon(pygame.sprite.Sprite):
         image = pygame.Surface((100,100), pygame.SRCALPHA)
         image.blit(self.spritesheet, (0,0), location)
         self.image = image
+        self.image = pygame.transform.scale(self.image,(200, 200))
         self.rect = self.image.get_rect()
         
         return self

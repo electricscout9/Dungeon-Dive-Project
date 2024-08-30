@@ -28,6 +28,15 @@ def database_initialise():
                 room_ID TEXT PRIMARY KEY,
                 sprite TEXT,
                 enemies TEXT)""")
+        db.execute("""CREATE TABLE enemy_table(
+                enemy_ID TEXT PRIMARY KEY,
+                sprite TEXT,
+                health TEXT)""")
+        db.execute("""CREATE TABLE runs_table(
+                run_ID TEXT PRIMARY KEY,
+                player_ID TEXT,
+                score TEXT,
+                date TEXT)""")
         
         db.commit()
         
