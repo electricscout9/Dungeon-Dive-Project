@@ -66,6 +66,10 @@ devmode = False
 first = True
 player_invulnerable = 0
 score = 0
+current_floor = []
+total_rooms_visited = 0
+changed_room = True
+last_room = 0
 
 room_width = 800
 room_height = 600
@@ -86,12 +90,9 @@ mainScene = pygame.display.set_mode((800, 600))
 #Intitiallising the player character
 player = make_player(path)
 
-orb = Sprite(20, 20, path + "\\assets\\sprites\\enemies\\orb\\orb.png", 2, [[10,10],[10,10],[10,10]])
-orb.rect.x += 30
-orb.rect.y += 30
-
 room = Room(room_height, room_width, path + room_map[map_coordinate[0]][map_coordinate[1]], 2)
 room = create_mask(room, (0,0,0,255))
+
 
 
 #Initiallising the players weapon
@@ -106,6 +107,10 @@ signup = Label(20, 70, "Sign Up", (400,300), (0,0,0))
 enter = Label(20, 50, "Enter", (600, 500), (0,0,0))
 
 health = Label(20, 90, ("Health:" + str(player.health)), (710, 0), (0,0,0))
+
+rooms_visited = Label(20, 100, ("Rooms:" + str(total_rooms_visited)), (80, 0), (0,0,0))
+
+floors = Label(20, 80, ("Floor:" + str(total_rooms_visited)), (0, 0), (0,0,0))
 
 
 labels.append(login)
@@ -142,15 +147,70 @@ while running:
         mouse_left_down = False
             
         
-        player, map_coordinate, changed_room = room_change(player, map_coordinate, room)
-        if changed_room:
+        
+        
+        
+            
+        if len(current_floor) == 9 and len(enemies) == 0:
+            score += 50
+            room_map = [[None,None,None],
+                        [None,None,None],
+                        [None,None,None]]
+            room_map = map_rooms(room_map, db)
+            map_coordinate = [1,1]
+            current_floor = [[1,1]]
+            changed_room = True
+            floors.text = str(int(floors.text[6:]) + 1)
+            
+        if changed_room and player_free:
+            
+            if enemies:
+                all_killed = False
+            else:
+                all_killed = True
             entities.remove(room)
             room = Room(room_height, room_width, path + room_map[map_coordinate[0]][map_coordinate[1]], 2)
             entities.add(room)
             changed_room = False
             room = create_mask(room, (0,0,0,255))
-            score += 25
+            
+
+            enemies = pygame.sprite.Group()
+            
+            if (last_room not in current_floor) and all_killed:
+                score += 25
+                total_rooms_visited += 1
+                current_floor.append(last_room)
+                                        
+            if not (map_coordinate in current_floor):
+                
+                for i in range(r.randint(1,2)):
+                    enemy_data = db.execute("SELECT * FROM enemy_table ORDER BY RANDOM() LIMIT 1").fetchone()
+                    i = Sprite(20, 20, path + enemy_data[1], 2, [[10,10],[10,10],[10,10]])
+                    i.health = int(enemy_data[2])
+                    
+                    enemy_colliding = True
+                    
+                    while enemy_colliding:
+                        enemy_colliding = False
+                        i.rect.x = r.randint(0,800)
+                        i.rect.y = r.randint(0,600)
+                        for current in entities:
+                            if pygame.sprite.collide_mask(i, current):
+                                enemy_colliding = True
+                    
+                    enemies.add(i)
         
+        if player_free:  
+            last_room = list(map_coordinate)
+            player, map_coordinate, changed_room = room_change(player, map_coordinate, room)
+            
+                
+        
+        rooms_visited.text = str("Rooms:" + str(total_rooms_visited-1))
+        
+        
+
         for enemy in enemies:
             enemy = enemy_move(enemy, player, entities)
             if enemy.attack and player_invulnerable <= 0 and enemy.alive:
@@ -193,18 +253,19 @@ while running:
                     
                     for enemy in enemies:
                         magnitude = sqrt((player.rect.x-enemy.rect.x)**2 + (player.rect.y-enemy.rect.y)**2)
-                        if magnitude >= 40:
-                            enemies.remove(enemy)
-                            score += 10
-                        
-                    
-        
+                        if magnitude <= 100:
+                            enemy.health -= 1
+                            if enemy.health == 0:
+                                score += 10
+                                enemies.remove(enemy)
+
+
         #Stopping player inputs unless freed    
         if player_free:
             vect_move = vect_set(aDown, sDown, dDown, wDown, speed, player, room, vect_move)
-            player_move(player, vect_move, entities)
-            
-        
+            player_move(player, vect_move, entities, map_coordinate)
+
+
         #Detecting if start button pressed
         if signup.mouse_click():
             if signup in labels:
@@ -240,8 +301,9 @@ while running:
                     entities.add(room)
                     labels = []
                     labels.append(health)
+                    labels.append(floors)
+                    labels.append(rooms_visited)
                     weapons.add(player_weapon)
-                    enemies.add(orb)
                     
                 if start_type == "login":
                     test_data = db.execute("SELECT * FROM player_table").fetchall()
@@ -252,9 +314,11 @@ while running:
                             player_free = True
                             allSprites.add(player)
                             entities.add(room)
-                            enemies.add(orb)
+
                             labels = []
                             labels.append(health)
+                            labels.append(floors)
+                            labels.append(rooms_visited)
                             weapons.add(player_weapon)
                             player_data = current
                             break
@@ -267,9 +331,7 @@ while running:
                 active_box = None
                 textbox_active = False
                     
-
         if mouse_left_down:
-            
             for box in textboxes:
                 if textbox_press(mouse_position, box):
                     active_box = box
@@ -399,6 +461,12 @@ while running:
     textboxes = []
     labels = []
     enemies = pygame.sprite.Group()
+    player.rect.x = 50
+    player.rect.y = 50
+    current_floor = []
+    total_rooms_visited = 0
+    changed_room = True
+    last_room = 0
     
     entities.update()
     allSprites.update()
@@ -433,7 +501,6 @@ while running:
     pygame.display.flip()
     
     run_ID = str(r.randint(0,9)) + str(r.randint(0,9)) + str(r.randint(0,9))
-    print(run_ID)
     date = str(datetime.datetime.now())
     
     db.execute("INSERT INTO runs_table VALUES(?,?,?,?)", [run_ID, username.text, str(score), date[0:10]])
@@ -456,9 +523,10 @@ while running:
     player_free = True
     allSprites.add(player)
     entities.add(room)
-    enemies.add(orb)
     labels = []
     labels.append(health)
+    labels.append(floors)
+    labels.append(rooms_visited)
     weapons.add(player_weapon)
     score = 0
         

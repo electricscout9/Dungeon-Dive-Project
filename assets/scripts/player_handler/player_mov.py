@@ -63,7 +63,7 @@ def vect_set(aDown, sDown, dDown, wDown, speed, player_sprite, room, vect_move):
 
     return vect_move
         
-def player_move(player, vect_move, entities):
+def player_move(player, vect_move, entities, map_coordinates):
     
     if vect_move[0]**2 < 1:
         vect_move[0] = 0
@@ -84,9 +84,9 @@ def player_move(player, vect_move, entities):
                     if not pygame.sprite.collide_mask(player, entity):
                         break
                     player.rect.y += displace
-            if pygame.sprite.collide_mask(player, entity):
-                player.rect.x -= vect_move[0]
-                vect_move[0] = 0
+            #if pygame.sprite.collide_mask(player, entity):
+            #    player.rect.x -= vect_move[0]
+            #    vect_move[0] = 0
         player.rect.y += vect_move[1]
         if pygame.sprite.collide_mask(player, entity):
             if ((vect_move[1]==0 and vect_move[0] != 0) or (vect_move[1]!=0 and vect_move[0]==0)) and (player.rect.x <= 790 and player.rect.x >= 10) and (player.rect.y >=10 and player.rect.y <= 590):
@@ -100,9 +100,23 @@ def player_move(player, vect_move, entities):
                     if not pygame.sprite.collide_mask(player, entity):
                         break
                     player.rect.x += displace
-            if pygame.sprite.collide_mask(player, entity):
-                player.rect.y -= vect_move[1]
-                vect_move[1] = 0
+            #if pygame.sprite.collide_mask(player, entity):
+            #    player.rect.y -= vect_move[1]
+            #    vect_move[1] = 0
+    
+    if player.rect.x < 0:
+        if map_coordinates[1] == 0:
+            player.rect.x = 1
+    if player.rect.y < 0:
+        if map_coordinates[0] == 0:
+            player.rect.y = 1
+    if player.rect.x + player.width > 800:
+        if map_coordinates[1] == 2:
+            player.rect.x = 799-player.width
+    if player.rect.y + player.height > 600:
+        if map_coordinates[0] == 2:
+            player.rect.y = 599-player.height
+    
     
     
     if vect_move[0] < 0:
