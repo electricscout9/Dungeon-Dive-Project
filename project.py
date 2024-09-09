@@ -11,6 +11,7 @@ import sqlite3 as sql
 import pathlib
 import random as r
 import datetime
+import os.path
 
 
 #Importing relevant functions
@@ -48,7 +49,7 @@ a=ord("a") #Character ascii codes
 s=ord("s")
 d=ord("d")
 w=ord("w")
-speed = 2  #Player speed
+speed = 5 #Player speed
 player_hand = [0,0]  #Player hand location
 vect_move = [0,0]  #Player movement vector
 button_hover = False  #Mouse hovering button
@@ -62,14 +63,14 @@ animation_time = 0.05
 current_frame = 0
 start_type = ""
 player_data = ()
-devmode = False
+devmode = True
 first = True
 player_invulnerable = 0
 score = 0
 current_floor = []
 total_rooms_visited = 0
 changed_room = True
-last_room = 0
+last_room = []
 
 room_width = 800
 room_height = 600
@@ -110,7 +111,7 @@ health = Label(20, 90, ("Health:" + str(player.health)), (710, 0), (0,0,0))
 
 rooms_visited = Label(20, 100, ("Rooms:" + str(total_rooms_visited)), (80, 0), (0,0,0))
 
-floors = Label(20, 80, ("Floor:" + str(total_rooms_visited)), (0, 0), (0,0,0))
+floors = Label(20, 80, ("Floor: 1"), (0, 0), (0,0,0))
 
 
 labels.append(login)
@@ -135,7 +136,7 @@ while running:
         #Updating the clock and relevant variables
         dt = clock.tick(FPS)/1000
         current_time += dt
-        speed = 200*dt
+        speed = 500*dt
         player_invulnerable -= dt
         
         
@@ -150,18 +151,20 @@ while running:
         
         
         
-            
         if len(current_floor) == 9 and len(enemies) == 0:
+            print("test")
             score += 50
             room_map = [[None,None,None],
                         [None,None,None],
                         [None,None,None]]
             room_map = map_rooms(room_map, db)
             map_coordinate = [1,1]
-            current_floor = [[1,1]]
+            current_floor = []
             changed_room = True
-            floors.text = str(int(floors.text[6:]) + 1)
-            
+            last_room = []
+            floors.text = "Floor:" +str(((total_rooms_visited)//9)+1)
+        
+        
         if changed_room and player_free:
             
             if enemies:
@@ -177,11 +180,11 @@ while running:
 
             enemies = pygame.sprite.Group()
             
-            if (last_room not in current_floor) and all_killed:
+            if (last_room not in current_floor) and all_killed and last_room != []:
                 score += 25
                 total_rooms_visited += 1
                 current_floor.append(last_room)
-                                        
+                
             if not (map_coordinate in current_floor):
                 
                 for i in range(r.randint(1,2)):
@@ -206,8 +209,7 @@ while running:
             player, map_coordinate, changed_room = room_change(player, map_coordinate, room)
             
                 
-        
-        rooms_visited.text = str("Rooms:" + str(total_rooms_visited-1))
+        rooms_visited.text = str("Rooms:" + str(total_rooms_visited))
         
         
 
@@ -466,7 +468,7 @@ while running:
     current_floor = []
     total_rooms_visited = 0
     changed_room = True
-    last_room = 0
+    last_room = []
     
     entities.update()
     allSprites.update()
@@ -481,12 +483,13 @@ while running:
     
     player_scores = db.execute("SELECT score FROM runs_table WHERE player_ID ='" + player_ID + "'").fetchall()
 
+    
     if len(player_scores) == 1:
-        highscore = player_scores[0]
+        highscore = player_scores[0][0]
     elif len(player_scores) == 0:
         highscore = str(0)
     else:
-        highscore = sorted(player_scores)[-1]
+        highscore = sorted(player_scores)[-1][0]
 
 
     score_label = Label(20,70+(10 * len(str(score))),("Score: " + str(score)), (375,260), (0,0,0))
@@ -500,10 +503,15 @@ while running:
     draw_labels(labels, mainScene)
     pygame.display.flip()
     
-    run_ID = str(r.randint(0,9)) + str(r.randint(0,9)) + str(r.randint(0,9))
+    total_runs = len(db.execute("SELECT run_ID FROM runs_table").fetchall())
+    
+    run_ID = str(total_runs+1)
+    while len(run_ID) < 3:
+        run_ID = "0" + run_ID
+
     date = str(datetime.datetime.now())
     
-    db.execute("INSERT INTO runs_table VALUES(?,?,?,?)", [run_ID, username.text, str(score), date[0:10]])
+    db.execute("INSERT INTO runs_table VALUES(?,?,?,?)", [run_ID, player_ID, str(score), date[0:10]])
     db.commit()
     
     play_again = False
@@ -550,13 +558,45 @@ def dev_initialise():
     selection = input("Option: ")
     return selection
 
+
+def verify(text, cases):
+    if cases == 1:
+        try:
+            text = text / 1
+        except:
+            return False
+        else:
+            return True
+    if cases == "":
+        try:
+            text = text + ""
+        except:
+            return False
+        else:
+            return True
+    if cases == []:
+        try:
+            temp_path = path + text
+        except:
+            return False
+        else:
+            if os.path.isfile(temp_path):
+                return True
+            else:
+                return False
+
+
 def input_row(row):
     
     new = []
     
     print("\n\n================================================================================")
     for thing in row:
-        new.append(input("Please enter the "+ str(thing) + ":"))
+        next = input("Please enter the "+ str(thing[0]) + ":")
+        while not verify(next, thing[1]):
+            print("Invalid Input")
+            next = input("Please enter the "+ str(thing[0]) + ":")
+        new.append()
     
     return new
     
@@ -634,7 +674,7 @@ def player_table(player_table_active):
         
         while not data_correct:
             
-            new_row = [str(r.randint(0,9)) + str(r.randint(0,9)) + chr(r.randint(65, 90)) + chr(r.randint(65, 90))] + input_row(["Username", "Password", "Email"])
+            new_row = [str(r.randint(0,9)) + str(r.randint(0,9)) + chr(r.randint(65, 90)) + chr(r.randint(65, 90))] + input_row([["Username", ""], ["Password",""], ["Email",""]])
 
             print_player_table(new_row)
             
@@ -674,7 +714,7 @@ def player_table(player_table_active):
         
         while not data_correct:
             
-            new_row = [selected_row[0]] + input_row(["Username", "Password", "Email"])
+            new_row = [selected_row[0]] + input_row([["Username", ""], ["Password",""], ["Email",""]])
 
             print_player_table(new_row)
             
@@ -707,7 +747,7 @@ def player_table(player_table_active):
         print_player_table(player_table_data)
             
         selected_ID = input("Enter ID: ").upper()
-        
+        z
         selected_row = db.execute(f"SELECT * FROM player_table WHERE player_ID='{selected_ID}'").fetchone()
         
         confirmation = input(f"\nAre you sure you wish to delete the row with ID {selected_ID}(Y/N): ")
