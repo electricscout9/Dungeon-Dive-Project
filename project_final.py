@@ -5,19 +5,515 @@ import pathlib
 import random as r
 import datetime
 import os.path
+from math import *
 
 
-#Importing relevant functions
-from assets.scripts.player_handler.player_start import *
-from assets.scripts.player_handler.player_mov import *
-from assets.scripts.mask_handler.new_mask import *
-from assets.scripts.menus.main_start.main_menu import *
-from assets.scripts.room_handler import *
-from assets.scripts.database.database_start import *
-from assets.scripts.multipend import *
-from assets.scripts.button import *
-from assets.scripts.weapons import *
-from assets.scripts.text_entry import *
+class Image_Button(pygame.sprite.Sprite):
+    def __init__(self, height, width, img, scale):
+        super().__init__()
+        
+        self.image = pygame.image.load(img)
+        self.image = pygame.transform.scale(self.image, (self.image.get_width()*scale, self.image.get_height()*scale))
+        self.image.set_colorkey((255,255,255))
+        
+        self.rect = self.image.get_rect()
+        
+        self.height = height
+        self.width = width
+        self.state = False
+        
+    def mouse_click(self):
+        
+        
+        mouse_position = pygame.mouse.get_pos()
+        
+        if self.rect.collidepoint(mouse_position):
+            if pygame.mouse.get_pressed()[0] == 1 and self.state == False:
+                self.state = True
+                return True
+        
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.state = False
+            
+class Label(pygame.sprite.Sprite):
+    def __init__(self, height, width, text, pos, bg_colour):
+        super().__init__()
+        
+        self.height = height
+        self.width = width
+    
+        self.text = text
+        self.colour = bg_colour
+        self.text_width = (width-10)//10
+        self.font = pygame.font.SysFont("Lucida Sans Typewriter", 16)
+        
+        self.rect = pygame.Rect(pos[0], pos[1], width, height)
+        
+    def mouse_click(self):
+        
+        
+        mouse_position = pygame.mouse.get_pos()
+        
+        if self.rect.collidepoint(mouse_position):
+            if pygame.mouse.get_pressed()[0] == 1 :
+                return True
+            
+def draw_labels(labels, screen):
+    for label in labels:
+        
+        pygame.draw.rect(screen, label.colour, label.rect)
+        
+        text = label.font.render(label.text, True, (255,255,255))
+        
+        screen.blit(text, label.rect)
+        
+def multipend(list1, list2):
+    for i in list2:
+        list1.append(i)
+    return list1
+
+class Room(pygame.sprite.Sprite):
+    def __init__(self, height, width, img, path, scale, db):
+        super().__init__()
+        
+        self.image = pygame.image.load(path+img)
+        self.image = pygame.transform.scale(self.image, (width, height))
+        self.image.set_colorkey((255,255,255))
+        self.enemies = int(db.execute("SELECT enemies FROM room_table WHERE sprite ='" + img + "'").fetchone()[0])
+        self.width = width
+        self.height = height
+        
+        self.rect = self.image.get_rect()
+        
+        
+def room_change(player, map_coordinate, room):
+    
+    changed = False
+    
+    if player.rect.x > room.width:
+        if (map_coordinate[1]+1>=0 and map_coordinate[1]+1<=2):
+            map_coordinate[1] += 1
+            player.rect.x = 0
+            changed = True
+    if player.rect.x < 0:
+        if (map_coordinate[1]-1>=0 and map_coordinate[1]-1<=2):
+            map_coordinate[1] -= 1
+            player.rect.x = room.width - player.width
+            changed = True
+    if player.rect.y > room.height:
+        if (map_coordinate[0]+1>=0 and map_coordinate[0]+1<=2):
+            map_coordinate[0] += 1
+            player.rect.y = 0
+            changed = True
+    if player.rect.y < 0:
+        if (map_coordinate[0]-1>=0 and map_coordinate[0]-1<=2):
+            map_coordinate[0] -= 1
+            player.rect.y = room.height - player.height
+            changed = True
+        
+    
+    
+    return player, map_coordinate, changed
+
+def map_rooms(room_map, db):
+    
+    all_rooms = db.execute("SELECT sprite FROM room_table").fetchall()
+    
+    temp = all_rooms
+    for row in range(len(room_map)):
+        for column in range(len(room_map[row])):
+            if len(temp) == 0:
+                temp = db.execute("SELECT sprite FROM room_table").fetchall()
+            room_map[row][column] = temp.pop(r.randint(0,len(temp)-1))[0]
+    return room_map
+
+class Textbox(pygame.sprite.Sprite):
+    def __init__(self, height, width, pos, colour, text_colour, label):
+        super().__init__()
+        
+        self.height = height
+        self.width = width
+        
+        self.rect = pygame.Rect(pos[0], pos[1], width, height)
+        
+        self.colour = colour
+        
+        self.text = ""
+        self.text_pos = 0
+        self.font = pygame.font.SysFont("Lucida Sans Typewriter", 16)
+        self.text_colour = text_colour
+        
+        self.text_width = (width-10)//10
+        
+        self.active = False
+        
+        self.cursor = Textbox_cursor(self)
+        
+        self.label = label
+    
+class Textbox_cursor(pygame.sprite.Sprite):
+    def __init__(self, textbox):
+        super().__init__()
+        
+        self.rect = pygame.Rect(textbox.rect.x + 5, textbox.rect.y,2, 20)
+        
+def draw_textbox(boxes, screen):
+    
+    for box in boxes:
+            pygame.draw.rect(screen, box.colour, box.rect)
+            
+            if len(box.text) > box.text_width:
+                if box.text_pos == 0:
+                    text = box.text[-box.text_width+box.text_pos:]
+                else:
+                    text = box.text[-box.text_width+box.text_pos:box.text_pos]
+            else:
+                text = box.text
+            text = box.font.render(text, True, (255,255,255))
+            screen.blit(text, (box.rect.x+5, box.rect.y))
+            
+            if box.active:
+                pygame.draw.rect(screen, (150, 150, 150), box.cursor.rect)
+            
+            if box.label != None:
+                
+                label = box.font.render(box.label, True, (0,0,0))
+                label_length = len(box.label) * 10 + 5
+                screen.blit(label, (box.rect.x-label_length, box.rect.y))
+        
+        
+        
+        
+        
+def textbox_press(mouse_location, box):
+    
+    box_pressed = False
+    
+    if box.rect.collidepoint(mouse_location):
+            box_pressed = True
+            
+    return box_pressed
+
+def character_entry(event, active_box, cursor_pos):
+    cursor_next = False
+    if event.key == pygame.K_BACKSPACE:
+        if active_box.cursor.rect.x-10 > active_box.rect.x:
+            active_box.cursor.rect.x -= 10
+            cursor_next = True
+        if cursor_pos == len(active_box.text):
+            active_box.text = active_box.text[:-1]
+            if len(active_box.text) > active_box.text_width and cursor_next:
+                active_box.cursor.rect.x += 10
+                cursor_next = False
+        else:
+            active_box.text = active_box.text[:cursor_pos-1] + active_box.text[cursor_pos:]
+            if len(active_box.text) > active_box.text_width and cursor_next:
+                active_box.cursor.rect.x += 10
+    elif event.key == pygame.K_RIGHT:
+        if active_box.cursor.rect.x+10 < active_box.rect.x+active_box.width and active_box.cursor.rect.x+10 < len(active_box.text)*10+active_box.rect.x+15: 
+            active_box.cursor.rect.x += 10
+        else:
+            active_box.text_pos += 1
+    elif event.key == pygame.K_LEFT:
+                    
+        if active_box.cursor.rect.x-10 > active_box.rect.x:
+            active_box.cursor.rect.x -= 10
+        else:
+            active_box.text_pos -= 1
+    else:
+        if active_box.cursor.rect.x+10 < active_box.rect.x+active_box.width and active_box.cursor.rect.x+10 < len(active_box.text)*10+active_box.rect.x+25:
+            cursor_next = True
+            active_box.cursor.rect.x += 10
+        if cursor_pos == len(active_box.text):
+            active_box.text += event.unicode
+        else:
+            active_box.text = active_box.text[:cursor_pos] + event.unicode + active_box.text[cursor_pos:]
+            if len(active_box.text) > active_box.text_width and cursor_next:
+                active_box.cursor.rect.x -= 10
+                cursor_next = False
+                
+class melee_weapon(pygame.sprite.Sprite):
+    def __init__(self, path, weapon_data):
+        super().__init__()
+        
+        self.spritesheet = pygame.image.load(path + weapon_data[1])
+        self.frames = int(self.spritesheet.get_width()/100)
+        self.current_rect = [0,0,99,99]
+        self.animation = False
+        
+        self.damage = float(weapon_data[2])
+        
+        self.animation_speed = float(weapon_data[3])
+                
+        self = self.image_at(self.current_rect)
+            
+    def image_at(self, location, colourkey = None):
+        
+        image = pygame.Surface((100,100), pygame.SRCALPHA)
+        image.blit(self.spritesheet, (0,0), location)
+        self.image = image
+        self.image = pygame.transform.scale(self.image,(200, 200))
+        self.rect = self.image.get_rect()
+        
+        return self
+
+def database_initialise():
+    
+        
+    if not pathlib.Path("dungeon_dive_DB.db").is_file():
+        add_data = True
+    else:
+        add_data = False
+        
+    db = sql.connect("dungeon_dive_DB.db")
+        
+    if add_data:
+        db.execute("""CREATE TABLE player_table(
+                player_ID TEXT PRIMARY KEY,
+                username TEXT,
+                password TEXT,
+                email TEXT)""")
+        
+        db.execute("""CREATE TABLE weapon_table(
+                weapon_ID TEXT PRIMARY KEY,
+                spritesheet TEXT,
+                damage TEXT,
+                frame_time TEXT)""")
+        db.execute("""CREATE TABLE room_table(
+                room_ID TEXT PRIMARY KEY,
+                sprite TEXT,
+                enemies TEXT)""")
+        db.execute("""CREATE TABLE enemy_table(
+                enemy_ID TEXT PRIMARY KEY,
+                sprite TEXT,
+                health TEXT)""")
+        db.execute("""CREATE TABLE runs_table(
+                run_ID TEXT PRIMARY KEY,
+                player_ID TEXT,
+                score TEXT,
+                date TEXT)""")
+        
+        db.commit()
+        
+        
+        
+    return db
+
+def create_mask(obj, mask_colour):
+    
+    obj.mask = pygame.mask.from_threshold(obj.image, mask_colour, (1, 1, 1,255))
+    return obj
+
+aDown = False
+sDown = False
+dDown = False
+wDown = False
+
+def player_input(event, player, current_frame):
+
+    global aDown
+    global sDown
+    global dDown
+    global wDown
+    if event.type == pygame.KEYDOWN:
+        if chr(event.key) == "a":
+            aDown = True
+
+        if chr(event.key) == "w":
+            wDown = True
+
+        if chr(event.key) == "s":
+            sDown = True
+
+        if chr(event.key) == "d":
+             dDown = True
+
+    if event.type == pygame.KEYUP:
+        if chr(event.key) == "a":
+            aDown = False
+        if chr(event.key) == "w":
+            wDown = False
+        if chr(event.key) == "s":
+            sDown = False
+        if chr(event.key) == "d":
+            dDown = False
+
+    if current_frame == 0:    
+        if aDown:
+            player.direction = 90
+        if dDown:
+            player.direction = 270
+    
+    return aDown, sDown, dDown, wDown, player
+        
+def vect_set(aDown, sDown, dDown, wDown, speed, player_sprite, room, vect_move):
+
+    if wDown and (aDown or dDown) or sDown and (aDown or dDown):
+        speed = sqrt((speed**2)/2)
+    if vect_move[0]**2 <= speed**2:
+        if aDown:
+            vect_move[0] -= speed
+        if dDown:
+            vect_move[0] += speed
+    if vect_move[1]**2 <= speed**2:
+        if sDown:
+            vect_move[1] += speed
+        if wDown:
+            vect_move[1] -= speed
+            
+
+    return vect_move
+        
+def player_move(player, vect_move, entities, map_coordinates):
+    
+    if vect_move[0]**2 < 1:
+        vect_move[0] = 0
+    if vect_move[1]**2 <1:
+        vect_move[1] = 0
+        
+    for entity in entities:
+        player.rect.x += vect_move[0]
+        if pygame.sprite.collide_mask(player, entity):
+            if ((vect_move[1]==0 and vect_move[0] != 0) or (vect_move[1]!=0 and vect_move[0]==0)) and (player.rect.x <= 790 and player.rect.x >= 10) and (player.rect.y >=10 and player.rect.y <= 590):
+                for displace in range(5):
+                    player.rect.y += displace
+                    if not pygame.sprite.collide_mask(player, entity):
+                        break
+                    player.rect.y -= displace
+                for displace in range(5):
+                    player.rect.y -= displace
+                    if not pygame.sprite.collide_mask(player, entity):
+                        break
+                    player.rect.y += displace
+            #if pygame.sprite.collide_mask(player, entity):
+            #    player.rect.x -= vect_move[0]
+            #    vect_move[0] = 0
+        player.rect.y += vect_move[1]
+        if pygame.sprite.collide_mask(player, entity):
+            if ((vect_move[1]==0 and vect_move[0] != 0) or (vect_move[1]!=0 and vect_move[0]==0)) and (player.rect.x <= 790 and player.rect.x >= 10) and (player.rect.y >=10 and player.rect.y <= 590):
+                for displace in range(5):
+                    player.rect.x += displace
+                    if not pygame.sprite.collide_mask(player, entity):
+                        break
+                    player.rect.x -= displace
+                for displace in range(5):
+                    player.rect.x -= displace
+                    if not pygame.sprite.collide_mask(player, entity):
+                        break
+                    player.rect.x += displace
+            #if pygame.sprite.collide_mask(player, entity):
+            #    player.rect.y -= vect_move[1]
+            #    vect_move[1] = 0
+    
+    if player.rect.x < 0:
+        if map_coordinates[1] == 0:
+            player.rect.x = 1
+    if player.rect.y < 0:
+        if map_coordinates[0] == 0:
+            player.rect.y = 1
+    if player.rect.x + player.width > 800:
+        if map_coordinates[1] == 2:
+            player.rect.x = 799-player.width
+    if player.rect.y + player.height > 600:
+        if map_coordinates[0] == 2:
+            player.rect.y = 599-player.height
+    
+    
+    
+    if vect_move[0] < 0:
+        vect_move[0] += 1
+    elif vect_move[0] >0:
+        vect_move[0] -= 1
+    if vect_move[1] < 0 :
+        vect_move[1] += 1
+    elif vect_move[1] >0:
+        vect_move[1] -= 1
+        
+def enemy_move(enemy, player, entities, speed=2):
+    
+    move_unit_vect = [player.rect.x-enemy.rect.x, player.rect.y-enemy.rect.y]
+    magnitude = sqrt(move_unit_vect[0]**2+move_unit_vect[1]**2)
+    
+    if magnitude == 0:
+        magnitude = 1
+    move_unit_vect = [move_unit_vect[0]/magnitude, move_unit_vect[1]/magnitude]
+    
+    move_vect = [move_unit_vect[0]*speed, move_unit_vect[1]*speed]
+    
+    for current in entities:
+        enemy.rect.x += move_vect[0]
+        enemy.rect.y += move_vect[1]
+        if pygame.sprite.collide_mask(enemy, current):
+            enemy.rect.x -= move_vect[0]
+            enemy.rect.y -= move_vect[1]
+            
+            
+    if magnitude <= 20:
+        enemy.attack = True
+    else:
+        enemy.attack = False
+    
+    return enemy
+            
+        
+    
+    
+        
+def entity_direction(entity, entity_hand, entity_weapon):
+    
+    if entity.direction == 0:
+        entity.image = pygame.transform.scale(pygame.image.load((str(entity.image_folder)[:-4]+"_up.png")), (entity.width, entity.height))
+        entity_hand = [entity.rect.x + entity.hand[1][0], entity.rect.y + entity.hand[1][1]]
+        if not entity_weapon.animation:
+            entity_weapon = entity_weapon.image_at((0,0,99,99))
+    if entity.direction == 90:
+        entity.image = pygame.transform.scale(pygame.transform.flip(pygame.image.load(entity.image_folder), True, False), (entity.width, entity.height))
+        entity_hand = [entity.rect.x + (entity.width+1-entity.hand[0][0]), entity.rect.y + entity.hand[0][1]]
+        if not entity_weapon.animation:
+            entity_weapon.image = pygame.transform.rotate(entity_weapon.image_at((0,0,99,99)).image, 90)
+    if entity.direction == 270:
+        entity.image = pygame.transform.scale(pygame.image.load(entity.image_folder), (entity.width, entity.height))
+        entity_hand = [entity.rect.x + entity.hand[0][0], entity.rect.y + entity.hand[0][1]]
+        if not entity_weapon.animation:
+            entity_weapon.image = pygame.transform.rotate(entity_weapon.image_at((0,0,99,99)).image, 270)
+    if entity.direction == 180:
+        entity.image = pygame.transform.scale(pygame.image.load((str(entity.image_folder)[:-4]+"_down.png")), (entity.width, entity.height))
+        entity_hand = [entity.rect.x + entity.hand[2][0], entity.rect.y + entity.hand[2][1]]
+        if not entity_weapon.animation:
+            entity_weapon.image = pygame.transform.flip(entity_weapon.image_at((0,0,99,99)).image, False, True)
+            
+    return entity, entity_hand, entity_weapon
+
+class Sprite(pygame.sprite.Sprite):
+    def __init__(self, height, width, img, scale, hand_pos):
+        super().__init__()
+        
+        self.image_folder = img
+        
+        self.attack = False
+        self.health = 0
+        
+        self.image = pygame.image.load(img)
+        self.image = pygame.transform.scale(self.image, (width*scale, height*scale))
+        self.image.set_colorkey((255,255,255))
+        
+        self.width = width*scale
+        self.height = height*scale
+        self.hand = [[hand_pos[0][0]*scale, hand_pos[0][1]*scale], [hand_pos[1][0]*scale, hand_pos[1][1]*scale], [hand_pos[2][0]*scale, hand_pos[2][1]*scale]]
+        
+        self.rect = self.image.get_rect()
+        self.direction = 270
+        self.direction_last = 270
+        
+
+        
+def make_player(path):
+    player = Sprite(22, 30, path + "\\assets\\sprites\\player_assets\\crtlnd\\crtlnd.png", 2, [[28,14], [25,9], [23,19]])
+    player = create_mask(player, (32,32,31,255))
+    player.rect.x = 50
+    player.rect.y = 50
+    player.health = 3
+    return player
 
 #Initialising pygame
 pygame.init()
@@ -56,7 +552,7 @@ animation_time = 0.05
 current_frame = 0
 start_type = ""
 player_data = ()
-devmode = False
+devmode = True
 first = True
 player_invulnerable = 0
 score = 0
@@ -84,7 +580,7 @@ mainScene = pygame.display.set_mode((800, 600))
 #Intitiallising the player character
 player = make_player(path)
 
-room = Room(room_height, room_width, path + room_map[map_coordinate[0]][map_coordinate[1]], 2)
+room = Room(room_height, room_width, room_map[map_coordinate[0]][map_coordinate[1]],path, 2, db)
 room = create_mask(room, (0,0,0,255))
 
 
@@ -141,9 +637,6 @@ while running:
         mouse_left_down = False
             
         
-        
-        
-        
         if len(current_floor) == 9 and len(enemies) == 0:
             score += 50
             room_map = [[None,None,None],
@@ -164,7 +657,7 @@ while running:
             else:
                 all_killed = True
             entities.remove(room)
-            room = Room(room_height, room_width, path + room_map[map_coordinate[0]][map_coordinate[1]], 2)
+            room = Room(room_height, room_width, room_map[map_coordinate[0]][map_coordinate[1]],path, 2, db)
             entities.add(room)
             changed_room = False
             room = create_mask(room, (0,0,0,255))
@@ -179,7 +672,7 @@ while running:
                 
             if not (map_coordinate in current_floor):
                 
-                for i in range(r.randint(1,2)):
+                for i in range(room.enemies):
                     enemy_data = db.execute("SELECT * FROM enemy_table ORDER BY RANDOM() LIMIT 1").fetchone()
                     i = Sprite(16,16, path + enemy_data[1], 3, [[10,10],[10,10],[10,10]])
                     i.health = int(enemy_data[2])
@@ -195,7 +688,6 @@ while running:
                                 enemy_colliding = True
                     
                     enemies.add(i)
-        
         if player_free:  
             last_room = list(map_coordinate)
             player, map_coordinate, changed_room = room_change(player, map_coordinate, room)
@@ -475,7 +967,7 @@ while running:
     
     player_ID = db.execute("SELECT player_ID FROM player_table WHERE username ='" + username.text + "'").fetchone()
     
-    player_scores = db.execute("SELECT score FROM runs_table WHERE player_ID ='" + player_ID + "'").fetchall()
+    player_scores = db.execute("SELECT score FROM runs_table WHERE player_ID ='" + player_ID[0] + "'").fetchall()
 
     
     if len(player_scores) == 1:
@@ -505,7 +997,7 @@ while running:
 
     date = str(datetime.datetime.now())
     
-    db.execute("INSERT INTO runs_table VALUES(?,?,?,?)", [run_ID, player_ID, str(score), date[0:10]])
+    db.execute("INSERT INTO runs_table VALUES(?,?,?,?)", [run_ID, player_ID[0], str(score), date[0:10]])
     db.commit()
     
     play_again = False
@@ -1148,12 +1640,12 @@ def print_enemy_table(table_data):
         health_max -= 6
     
     print("\n\n================================================================================")
-    print("Room_ID|Sprite"+sprite_max*" "+"|Health|")
-    print("-------|------"+sprite_max*"-"+"|------|")
+    print("Enemy_ID|Sprite"+sprite_max*" "+"|Health|")
+    print("--------|------"+sprite_max*"-"+"|------|")
         
     if not isinstance(table_data[0], str):
         for row in table_data:
-            print(""+row[0]+"    |", end="")
+            print(""+row[0]+"     |", end="")
             print(row[1]+(sprite_max-len(row[1])+6)*" "+"|", end="")
             print(row[2]+(health_max-len(row[2])+4)*" "+"|")
             
@@ -1468,6 +1960,7 @@ if devmode:
         weapon_table_active = True
         enemy_table_active = True
         runs_table_active = True
+        room_table_active = True
         choice = dev_initialise()
         
         if choice == "1":

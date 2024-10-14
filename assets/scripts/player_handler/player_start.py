@@ -23,6 +23,8 @@ class Sprite(pygame.sprite.Sprite):
         self.direction = 270
         self.direction_last = 270
         
+
+        
 def make_player(path):
     player = Sprite(22, 30, path + "\\assets\\sprites\\player_assets\\crtlnd\\crtlnd.png", 2, [[28,14], [25,9], [23,19]])
     player = create_mask(player, (32,32,31,255))
